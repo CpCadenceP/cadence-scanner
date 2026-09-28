@@ -1,0 +1,198 @@
+{
+ "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
+ "updated": "2026-09-28T17:00:26.450Z",
+ "barcodes": {
+  "00074130001299": {
+   "product": "VAL PC DAILY PROTECT 10W30 6/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "797578 bottle"
+  },
+  "00074130001350": {
+   "product": "VAL PC DAILY PROTECT 20W50 6/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "822344 bottle"
+  },
+  "00074130001749": {
+   "product": "VAL PC DAILY PROTECT 5W20 6/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "797974 bottle"
+  },
+  "00074130001770": {
+   "product": "VAL PC DAILY PROTECT 5W30 6/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "797975 bottle"
+  },
+  "00074130003248": {
+   "product": "VAL MAXLIFE MV DEX/MER ATF 6/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "VV3246 bottle"
+  },
+  "00074130003538": {
+   "product": "VAL ATF DEX/MERC 6/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "798153 bottle"
+  },
+  "00074130009271": {
+   "product": "VAL ADV FULL SYN 5W20 6/32",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "VV927 bottle"
+  },
+  "00074130009554": {
+   "product": "VAL ADV FULL SYN 5W30 6/32",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "VV955 bottle"
+  },
+  "00074130009752": {
+   "product": "VAL SYNPOW FS 75W90 GO 12/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "VV975 bottle"
+  },
+  "00074130022003": {
+   "product": "VAL COBALT #2 GRS 50/14.1 OC",
+   "packageDesc": "Case Pound",
+   "addedBy": "starter",
+   "note": "872117 tube"
+  },
+  "00074130025783": {
+   "product": "VAL PC DAILY PROTECT 10W30 6/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T14:57:48.721Z"
+  },
+  "00074130029835": {
+   "product": "VAL ADV FULL SYN 0W16 6/32",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "878400 bottle"
+  },
+  "00074130030961": {
+   "product": "VAL SAE 5W30 ABB 1/5 GA",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "881042 box"
+  },
+  "00074130031029": {
+   "product": "VAL MaxLife HM 5W30 BB",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "881047 box"
+  },
+  "00074130031081": {
+   "product": "VAL EURO SYN 5W40 ABB 1/5 GA",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "881050 box"
+  },
+  "00074130031104": {
+   "product": "VAL MAXLIFE MV DEX/MER ATF BB",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "881051 box"
+  },
+  "00074130031180": {
+   "product": "VAL EURO SYN 5W30 ABB 1/5 GA",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "881055 box"
+  },
+  "00074130033535": {
+   "product": "VAL FULL SYN 5W20 BB",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "881655 box"
+  },
+  "000741300448": {
+   "product": "VAL EURO FULL SYN 0W20 6/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T14:56:31.284Z"
+  },
+  "00074130046443": {
+   "product": "VAL Dual Clutch Syn Trans 6/32",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "888705 bottle"
+  },
+  "00074130047976": {
+   "product": "VAL PB ONE SOL GEN2 15W40 3/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "891007 bottle"
+  },
+  "00074130056466": {
+   "product": "VAL ALLTERRAIN 15W40 3/1 GA",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "894015 bottle"
+  },
+  "000741300748": {
+   "product": "VAL ADV FULL SYN 0W8 6/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T15:00:20.066Z"
+  },
+  "00074130701243": {
+   "product": "VAL CRIMSON #2 GRS 50/14.1 OC",
+   "packageDesc": "Case Pound",
+   "addedBy": "starter",
+   "note": "VV70124 tube"
+  },
+  "00074130701335": {
+   "product": "VAL CERULEAN #2 GRS 50/14.1",
+   "packageDesc": "Case Pound",
+   "addedBy": "starter",
+   "note": "VV70133 tube"
+  },
+  "00074130705180": {
+   "product": "VAL PB EXTREME SYN 5W40 3/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "774038 bottle"
+  },
+  "00074130754331": {
+   "product": "Valvoline CVT Fluid 6/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "804751 bottle"
+  },
+  "00074130759324": {
+   "product": "Valvoline CVT Fluid 6/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T14:56:02.887Z"
+  },
+  "00074130927063": {
+   "product": "VAL ADV FULL SYN 5W20 6/32",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "VV927 carton"
+  },
+  "00074130955066": {
+   "product": "VAL ADV FULL SYN 5W30 6/32",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T14:59:29.581Z"
+  },
+  "00074130975125": {
+   "product": "VAL SYNPOW FS 75W90 GO 12/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "starter",
+   "note": "VV975 carton"
+  },
+  "00074730029811": {
+   "product": "VAL ADV FULL SYN 0W16 6/32",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T15:00:49.845Z"
+  }
+ }
+}
