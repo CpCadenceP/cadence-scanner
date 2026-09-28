@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#013C4C">
 <title>Cadence Cycle Count</title>
 <style>
   :root {
@@ -115,8 +121,9 @@
   .btn:disabled { opacity: .45; cursor: default; }
 
   /* Scan view */
-  #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; }
-  #reader video { object-fit: cover; }
+  #reader-live { width: 100%; min-height: 260px; border-radius: 12px; overflow: hidden; background: #000; }
+  #reader-live video { object-fit: cover; }
+  #reader-file { display: none; }
   .scan-frame-hint {
     text-align: center; color: var(--soft); font-size: 13px; margin-top: 10px; line-height: 1.5;
   }
@@ -206,6 +213,8 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
+</head>
+<body>
 
 <div class="app" id="app">
   <header class="topbar">
@@ -420,9 +429,10 @@
     return -1;
   }
 
-  // ---------- scanning (photo-capture based — no live camera stream / no
-  // getUserMedia, so it sidesteps the camera-permission-policy dead end
-  // that live in-page video hits inside the artifact sandbox) ----------
+  // ---------- scanning ----------
+  // Live camera feed (getUserMedia) that reads barcodes continuously, using
+  // the phone's built-in barcode detector when the browser has one.
+  // "Take Photo" stays as a fallback for small or damaged labels.
 
   var SCAN_FORMATS_READY = typeof Html5QrcodeSupportedFormats !== "undefined" ? [
     Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
@@ -431,24 +441,86 @@
     Html5QrcodeSupportedFormats.ITF, Html5QrcodeSupportedFormats.QR_CODE
   ] : undefined;
 
-  function getFileScanner() {
-    if (typeof Html5Qrcode === "undefined") return null;
-    if (!state.fileScanner) {
-      state.fileScanner = new Html5Qrcode("reader", { formatsToSupport: SCAN_FORMATS_READY, verbose: false });
+  var SCANNER_CONFIG = {
+    formatsToSupport: SCAN_FORMATS_READY,
+    verbose: false,
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+  };
+
+  var stopPromise = Promise.resolve();
+  var pendingStart = Promise.resolve();
+
+  // Stop the live camera if it's running. Safe to call any time.
+  function stopLiveScan() {
+    state.scanToken = null;
+    var s = state.liveScanner;
+    if (!s) return stopPromise;
+    state.liveScanner = null;
+    stopPromise = Promise.resolve()
+      .then(function () { return s.stop(); })
+      .then(function () { try { s.clear(); } catch (e) {} })
+      .catch(function () {});
+    return stopPromise;
+  }
+
+  function startLiveScan(readerId, statusEl) {
+    if (typeof Html5Qrcode === "undefined") {
+      statusEl.textContent = "The barcode reader didn't load. Check your signal and reload, or use Search.";
+      return;
     }
-    return state.fileScanner;
+    var token = {};
+    // Wait for any earlier camera session to fully release before opening a new one.
+    pendingStart.then(function () { return stopPromise; }).then(function () {
+      if (state.view !== "scan" || !document.getElementById(readerId)) return;
+      state.scanToken = token;
+      var scanner = new Html5Qrcode(readerId, SCANNER_CONFIG);
+      var fired = false;
+      pendingStart = scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 12,
+          qrbox: function (w, h) {
+            return { width: Math.floor(w * 0.9), height: Math.max(90, Math.floor(Math.min(w, h) * 0.5)) };
+          }
+        },
+        function (decodedText) {
+          if (fired) return;
+          // Ignore the box you just counted while you move to the next one.
+          if (state.lastSaved && decodedText.trim() === state.lastSaved.code &&
+              Date.now() - state.lastSaved.at < 4000) return;
+          fired = true;
+          if (navigator.vibrate) navigator.vibrate(80);
+          stopLiveScan().then(function () { handleDecoded(decodedText.trim()); });
+        },
+        function () { /* no barcode in this frame; keep looking */ }
+      ).then(function () {
+        if (state.scanToken !== token) {
+          // User left the scan screen while the camera was starting.
+          return scanner.stop().then(function () { try { scanner.clear(); } catch (e) {} }).catch(function () {});
+        }
+        state.liveScanner = scanner;
+        statusEl.textContent = "Point at the barcode. It scans on its own.";
+      }).catch(function (err) {
+        var msg = String((err && err.message) || err || "");
+        if (/permission|notallowed|denied/i.test(msg)) {
+          statusEl.textContent = "Camera access is blocked. Tap the icon left of the address bar, allow Camera, then reload.";
+        } else {
+          statusEl.textContent = "Couldn't start the camera. Use Take Photo or Search instead.";
+        }
+      });
+    });
   }
 
   function decodePhoto(file, onDecoded) {
-    var scanner = getFileScanner();
-    if (!scanner) {
-      toast("Barcode reader failed to load — use search instead.");
+    if (typeof Html5Qrcode === "undefined") {
+      toast("Barcode reader failed to load. Use Search instead.");
       return;
     }
     state.decoding = true;
     state.scanError = null;
     render();
-    scanner.scanFile(file, true).then(function (decodedText) {
+    var scanner = new Html5Qrcode("reader-file", SCANNER_CONFIG);
+    scanner.scanFile(file, false).then(function (decodedText) {
       state.decoding = false;
       if (navigator.vibrate) navigator.vibrate(60);
       onDecoded(decodedText.trim());
@@ -484,6 +556,7 @@
   // ---------- views ----------
 
   function render() {
+    stopLiveScan();
     var main = document.getElementById("main");
     main.innerHTML = "";
     if (state.view === "loading") return renderLoading(main);
@@ -675,29 +748,21 @@
       main.appendChild(el('<div class="banner banner-warn">' + escapeHtml(state.scanError) + "</div>"));
     }
 
-    var captureCard = el(
-      '<div class="card" style="text-align:center;">' +
-        '<div style="font-size:40px;">&#128247;</div>' +
-        '<div style="font-weight:bold;margin:6px 0 4px;">Take a photo of the barcode</div>' +
-        '<div class="muted" style="font-size:13px;line-height:1.5;">Fill the frame with just the barcode, keep it flat and in focus. Opens your phone\'s camera app.</div>' +
-      "</div>"
-    );
-    main.appendChild(captureCard);
-
-    var fileInput = el('<input type="file" accept="image/*" capture="environment" style="display:none">');
-    main.appendChild(fileInput);
-    var captureBtn = el('<button class="btn btn-lime">&#128247; Take Photo</button>');
-    captureBtn.addEventListener("click", function () { fileInput.click(); });
-    main.appendChild(captureBtn);
-
-    main.appendChild(el('<div id="reader" style="margin-top:14px;border-radius:12px;overflow:hidden;"></div>'));
+    main.appendChild(el('<div id="reader-file"></div>'));
 
     if (state.decoding) {
       main.appendChild(el('<div class="scan-frame-hint"><span class="spinner" style="border-top-color:var(--navy);border-color:rgba(1,60,76,.2)"></span> Reading barcode…</div>'));
     } else {
-      main.appendChild(el('<div class="scan-frame-hint">Not every product has a clean barcode yet — the app learns new ones as you match them.</div>'));
+      main.appendChild(el('<div id="reader-live"></div>'));
+      var status = el('<div class="scan-frame-hint">Starting camera…</div>');
+      main.appendChild(status);
+      startLiveScan("reader-live", status);
     }
 
+    main.appendChild(el('<div class="scan-frame-hint" style="margin-top:4px;">New barcodes get matched once, then the app remembers them.</div>'));
+
+    var fileInput = el('<input type="file" accept="image/*" capture="environment" style="display:none">');
+    main.appendChild(fileInput);
     fileInput.addEventListener("change", function () {
       var file = fileInput.files && fileInput.files[0];
       fileInput.value = "";
@@ -705,14 +770,20 @@
       decodePhoto(file, handleDecoded);
     });
 
-    var searchBtn = el('<button class="btn btn-outline" style="margin-top:16px;">Search instead</button>');
+    var fallbackRow = el('<div class="btn-row" style="margin-top:16px;"></div>');
+    var captureBtn = el('<button class="btn btn-outline">&#128247; Take Photo</button>');
+    captureBtn.addEventListener("click", function () { stopLiveScan(); fileInput.click(); });
+    fallbackRow.appendChild(captureBtn);
+    main.appendChild(fallbackRow);
+
+    var searchBtn = el('<button class="btn btn-outline">&#128269; Search</button>');
     searchBtn.addEventListener("click", function () {
       state.searchTerm = "";
       state.pendingBarcode = null;
       state.view = "manual";
       render();
     });
-    main.appendChild(searchBtn);
+    fallbackRow.appendChild(searchBtn);
   }
 
   function renderManual(main) {
@@ -823,10 +894,13 @@
         work = work.then(function () { return learnBarcode(p.barcode, it); });
       }
       work.then(function () {
-        toast("Saved — " + it.product + ": " + fmtNum(qty));
+        toast("Saved: " + it.product + " = " + fmtNum(qty));
+        var cameFromScan = !!p.barcode;
+        if (cameFromScan) state.lastSaved = { code: p.barcode, at: Date.now() };
         state.pendingItem = null;
         state.pendingBarcode = null;
-        state.view = "progress";
+        state.scanError = null;
+        state.view = cameFromScan ? "scan" : "progress";
         render();
       }).catch(function (e) {
         saveBtn.disabled = false;
@@ -892,3 +966,5 @@
   boot();
 })();
 </script>
+</body>
+</html>
