@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-28T18:56:22.567Z",
+ "updated": "2026-09-28T18:57:24.260Z",
  "barcodes": {
   "00074130001299": {
    "product": "VAL PC DAILY PROTECT 10W30 6/1",
@@ -115,6 +115,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "starter",
    "note": "881055 box"
+  },
+  "00074130033528": {
+   "product": "VAL ADV FULL SYN 5W30 BB",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T18:57:21.084Z"
   },
   "00074130033535": {
    "product": "VAL FULL SYN 5W20 BB",
