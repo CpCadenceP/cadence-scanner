@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-28T18:53:02.796Z",
+ "updated": "2026-09-28T18:54:01.923Z",
  "barcodes": {
   "00074130001299": {
    "product": "VAL PC DAILY PROTECT 10W30 6/1",
@@ -133,6 +133,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "starter",
    "note": "894015 bottle"
+  },
+  "00074130074545": {
+   "product": "VAL ADV FULL SYN 0W8 6/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T18:53:58.981Z"
   },
   "00074130701243": {
    "product": "VAL CRIMSON #2 GRS 50/14.1 OC",
