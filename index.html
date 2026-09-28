@@ -71,6 +71,10 @@
   header.topbar .backbtn {
     background: none; border: none; color: #fff; font-size: 20px; padding: 4px 8px; margin: -4px 0 -4px -8px; cursor: pointer; line-height: 1;
   }
+  .topbar-link {
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); color: #fff;
+    border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: bold; cursor: pointer;
+  }
   .progress-pill {
     background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
     border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: bold; white-space: nowrap;
@@ -365,37 +369,229 @@
     if (changed) saveLocalStore();
   })();
 
-  // Built-in barcodes: codes printed on the case itself, verified from a real
-  // carton or a public source (see Cadence Barcode Database.xlsx). Added only if
-  // this phone hasn't already matched that code to something, so a manual
-  // re-match always wins.
+  // ----- shared barcode database -----
+  // One barcode file (barcodes.json) lives in the GitHub repo on its own
+  // branch, so updates don't rebuild the website. Every phone reads it on
+  // open; a phone with a sync key writes new matches back to it. Matches made
+  // without a key (or while offline) wait on the phone and go up on the next
+  // sync. Priority when codes disagree: this phone's unsynced match, then the
+  // shared file, then the starter list below.
+  var DB = { owner: "CpCadenceP", repo: "cadence-scanner", branch: "barcode-db", path: "barcodes.json" };
+  var GH_API = "https://api.github.com/repos/" + DB.owner + "/" + DB.repo;
+
+  // Starter list: carton codes confirmed on real cases, plus public UPCs found
+  // by part number (see Cadence Barcode Database.xlsx). [product, package, note]
   var BUILT_IN_BARCODES = {
-    // Valvoline 6/1 QT carton codes, confirmed on real cases 9/28/26
-    "00074130955066": ["VAL ADV FULL SYN 5W30 6/32", "Case Gallons"],   // VV955
-    "00074130927063": ["VAL ADV FULL SYN 5W20 6/32", "Case Gallons"],   // VV927
-    "00074130975125": ["VAL SYNPOW FS 75W90 GO 12/1 QT", "Case Gallons"], // VV975 (12/1 QT)
-    // Valvoline 5 gal boxes (the retail UPC is printed on the box)
-    "00074130031180": ["VAL EURO SYN 5W30 ABB 1/5 GA", "Case Gallons"], // 881055
-    "00074130033535": ["VAL FULL SYN 5W20 BB", "Case Gallons"],         // 881655
-    "00074130031104": ["VAL MAXLIFE MV DEX/MER ATF BB", "Case Gallons"],// 881051
-    "00074130031081": ["VAL EURO SYN 5W40 ABB 1/5 GA", "Case Gallons"], // 881050
-    "00074130031029": ["VAL MaxLife HM 5W30 BB", "Case Gallons"],       // 881047
-    "00074130030961": ["VAL SAE 5W30 ABB 1/5 GA", "Case Gallons"]       // 881042
+    "00074130955066": ["VAL ADV FULL SYN 5W30 6/32", "Case Gallons", "VV955 carton"],
+    "00074130927063": ["VAL ADV FULL SYN 5W20 6/32", "Case Gallons", "VV927 carton"],
+    "00074130975125": ["VAL SYNPOW FS 75W90 GO 12/1 QT", "Case Gallons", "VV975 carton"],
+    "00074130009554": ["VAL ADV FULL SYN 5W30 6/32", "Case Gallons", "VV955 bottle"],
+    "00074130009271": ["VAL ADV FULL SYN 5W20 6/32", "Case Gallons", "VV927 bottle"],
+    "00074130001770": ["VAL PC DAILY PROTECT 5W30 6/1", "Case Gallons", "797975 bottle"],
+    "00074130029835": ["VAL ADV FULL SYN 0W16 6/32", "Case Gallons", "878400 bottle"],
+    "00074130701335": ["VAL CERULEAN #2 GRS 50/14.1", "Case Pound", "VV70133 tube"],
+    "00074130046443": ["VAL Dual Clutch Syn Trans 6/32", "Case Gallons", "888705 bottle"],
+    "00074130003248": ["VAL MAXLIFE MV DEX/MER ATF 6/1", "Case Gallons", "VV3246 bottle"],
+    "00074130705180": ["VAL PB EXTREME SYN 5W40 3/1", "Case Gallons", "774038 bottle"],
+    "00074130047976": ["VAL PB ONE SOL GEN2 15W40 3/1", "Case Gallons", "891007 bottle"],
+    "00074130001749": ["VAL PC DAILY PROTECT 5W20 6/1", "Case Gallons", "797974 bottle"],
+    "00074130056466": ["VAL ALLTERRAIN 15W40 3/1 GA", "Case Gallons", "894015 bottle"],
+    "00074130022003": ["VAL COBALT #2 GRS 50/14.1 OC", "Case Pound", "872117 tube"],
+    "00074130031180": ["VAL EURO SYN 5W30 ABB 1/5 GA", "Case Gallons", "881055 box"],
+    "00074130033535": ["VAL FULL SYN 5W20 BB", "Case Gallons", "881655 box"],
+    "00074130031104": ["VAL MAXLIFE MV DEX/MER ATF BB", "Case Gallons", "881051 box"],
+    "00074130001299": ["VAL PC DAILY PROTECT 10W30 6/1", "Case Gallons", "797578 bottle"],
+    "00074130009752": ["VAL SYNPOW FS 75W90 GO 12/1 QT", "Case Gallons", "VV975 bottle"],
+    "00074130003538": ["VAL ATF DEX/MERC 6/1 QT", "Case Gallons", "798153 bottle"],
+    "00074130701243": ["VAL CRIMSON #2 GRS 50/14.1 OC", "Case Pound", "VV70124 tube"],
+    "00074130031081": ["VAL EURO SYN 5W40 ABB 1/5 GA", "Case Gallons", "881050 box"],
+    "00074130031029": ["VAL MaxLife HM 5W30 BB", "Case Gallons", "881047 box"],
+    "00074130001350": ["VAL PC DAILY PROTECT 20W50 6/1", "Case Gallons", "822344 bottle"],
+    "00074130030961": ["VAL SAE 5W30 ABB 1/5 GA", "Case Gallons", "881042 box"],
+    "00074130754331": ["Valvoline CVT Fluid 6/1 QT", "Case Gallons", "804751 bottle"]
   };
-  (function addBuiltInBarcodes() {
-    var changed = false;
-    Object.keys(BUILT_IN_BARCODES).forEach(function (code) {
-      if (LOCAL.barcodes[code]) return;
-      LOCAL.barcodes[code] = {
-        product: BUILT_IN_BARCODES[code][0],
-        packageDesc: BUILT_IN_BARCODES[code][1],
-        learnedInSession: "built-in",
-        learnedAt: null
-      };
-      changed = true;
+
+  if (!LOCAL.remoteCache) LOCAL.remoteCache = {};
+  if (!LOCAL.pending) {
+    // First run of the shared version: anything this phone matched by hand
+    // gets queued so it goes up to the shared file.
+    LOCAL.pending = {};
+    Object.keys(LOCAL.barcodes || {}).forEach(function (k) {
+      var b = LOCAL.barcodes[k];
+      if (b && b.learnedInSession !== "built-in") {
+        LOCAL.pending[k] = { product: b.product, packageDesc: b.packageDesc, addedBy: "scan", addedAt: b.learnedAt || new Date().toISOString() };
+      }
     });
-    if (changed) saveLocalStore();
-  })();
+  }
+
+  function rebuildBarcodes() {
+    var out = {};
+    Object.keys(BUILT_IN_BARCODES).forEach(function (k) {
+      var b = BUILT_IN_BARCODES[k];
+      out[k] = { product: b[0], packageDesc: b[1], addedBy: "starter", note: b[2] };
+    });
+    Object.keys(LOCAL.remoteCache).forEach(function (k) {
+      out[cleanBarcode(k, "") || k] = LOCAL.remoteCache[k];
+    });
+    Object.keys(LOCAL.pending).forEach(function (k) { out[k] = LOCAL.pending[k]; });
+    LOCAL.barcodes = out;
+  }
+  rebuildBarcodes();
+  saveLocalStore();
+
+  var SYNC_KEY_LS = "cadenceSyncKey";
+  function getSyncKey() { try { return localStorage.getItem(SYNC_KEY_LS) || ""; } catch (e) { return ""; } }
+  function setSyncKey(k) {
+    try { if (k) localStorage.setItem(SYNC_KEY_LS, k); else localStorage.removeItem(SYNC_KEY_LS); } catch (e) {}
+  }
+
+  function b64ToText(b64) {
+    var bin = atob(String(b64).replace(/\s/g, ""));
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function textToB64(str) {
+    var bytes = new TextEncoder().encode(str), bin = "";
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+
+  function gh(method, url, body, useKey) {
+    var headers = { "Accept": "application/vnd.github+json" };
+    var key = getSyncKey();
+    if (useKey !== false && key) headers["Authorization"] = "Bearer " + key;
+    if (body) headers["Content-Type"] = "application/json";
+    return fetch(GH_API + url, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
+  }
+
+  function syncErr(status, msg) { var e = new Error(msg); e.status = status; return e; }
+
+  // Read the shared file. Returns {sha, data}; data is null if it doesn't exist yet.
+  function fetchShared(useKey) {
+    return gh("GET", "/contents/" + DB.path + "?ref=" + DB.branch, null, useKey).then(function (r) {
+      if (r.status === 404) return { sha: null, data: null };
+      if (r.status === 401 && useKey !== false) {
+        state.syncKeyBad = true;
+        return fetchShared(false); // public repo: still readable without a key
+      }
+      if (!r.ok) throw syncErr(r.status, "read failed");
+      return r.json().then(function (j) { return { sha: j.sha, data: JSON.parse(b64ToText(j.content)) }; });
+    });
+  }
+
+  function ensureBranch() {
+    return gh("GET", "/git/ref/heads/" + DB.branch).then(function (r) {
+      if (r.ok) return;
+      if (r.status !== 404) throw syncErr(r.status, "branch check failed");
+      return gh("GET", "/git/ref/heads/main").then(function (m) {
+        if (!m.ok) throw syncErr(m.status, "main branch not found");
+        return m.json();
+      }).then(function (main) {
+        return gh("POST", "/git/refs", { ref: "refs/heads/" + DB.branch, sha: main.object.sha });
+      }).then(function (c) {
+        if (!c.ok && c.status !== 422) throw syncErr(c.status, "couldn't create branch");
+      });
+    });
+  }
+
+  function sortedObj(o) {
+    var out = {};
+    Object.keys(o).sort().forEach(function (k) { out[k] = o[k]; });
+    return out;
+  }
+
+  var syncRunning = null, syncQueued = false, syncTimer = null, lastPullAt = 0;
+
+  function scheduleSync(ms) {
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncBarcodes, ms == null ? 2500 : ms);
+  }
+
+  function syncBarcodes() {
+    if (syncRunning) { syncQueued = true; return syncRunning; }
+    state.syncStatus = "syncing";
+    updateSyncLine();
+    syncRunning = attemptSync(0).then(function (msg) {
+      state.syncStatus = "ok";
+      state.syncError = msg || null;
+      LOCAL.lastSync = new Date().toISOString();
+      lastPullAt = Date.now();
+    }).catch(function (e) {
+      state.syncStatus = "error";
+      var s = e && e.status;
+      if (s === 401) state.syncError = "The sync key was rejected. Check it on the Barcodes screen.";
+      else if (s === 403 || s === 404) state.syncError = "The sync key can't write to cadence-scanner. Check its repository access and Contents permission.";
+      else if (s === 429) state.syncError = "GitHub is busy. Will try again shortly.";
+      else state.syncError = "Couldn't reach the shared database (no signal?). New matches are saved on this phone and will sync later.";
+    }).then(function () {
+      rebuildBarcodes();
+      saveLocalStore();
+      syncRunning = null;
+      updateSyncLine();
+      if (state.view === "barcodes") render();
+      if (syncQueued) { syncQueued = false; scheduleSync(500); }
+    });
+    return syncRunning;
+  }
+
+  function attemptSync(tries) {
+    return fetchShared().then(function (res) {
+      if (res.data && res.data.barcodes) LOCAL.remoteCache = res.data.barcodes;
+      var key = getSyncKey();
+      var pendingKeys = Object.keys(LOCAL.pending);
+      var needCreate = !res.data;
+      if (!key) {
+        return pendingKeys.length ? "Add a sync key on the Barcodes screen to share this phone's new matches." : null;
+      }
+      if (state.syncKeyBad) throw syncErr(401, "bad key");
+      if (!pendingKeys.length && !needCreate) return null;
+
+      var sent = {};
+      var base = {};
+      if (needCreate) {
+        Object.keys(BUILT_IN_BARCODES).forEach(function (k) {
+          var b = BUILT_IN_BARCODES[k];
+          base[k] = { product: b[0], packageDesc: b[1], addedBy: "starter", note: b[2] };
+        });
+      } else {
+        Object.keys(res.data.barcodes).forEach(function (k) { base[k] = res.data.barcodes[k]; });
+      }
+      pendingKeys.forEach(function (k) { base[k] = LOCAL.pending[k]; sent[k] = LOCAL.pending[k]; });
+      var body = { about: "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
+                   updated: new Date().toISOString(), barcodes: sortedObj(base) };
+      var first = pendingKeys.length ? LOCAL.pending[pendingKeys[0]] : null;
+      var message = needCreate && !pendingKeys.length ? "Start barcode database"
+        : pendingKeys.length === 1 ? "Add barcode " + pendingKeys[0] + " (" + first.product + ")"
+        : "Add " + pendingKeys.length + " barcodes";
+      var payload = { message: message, content: textToB64(JSON.stringify(body, null, 1)), branch: DB.branch };
+      if (res.sha) payload.sha = res.sha;
+
+      return (needCreate ? ensureBranch() : Promise.resolve()).then(function () {
+        return gh("PUT", "/contents/" + DB.path, payload);
+      }).then(function (r) {
+        if ((r.status === 409 || r.status === 422) && tries < 3) return attemptSync(tries + 1); // someone else saved first
+        if (!r.ok) throw syncErr(r.status, "write failed");
+        LOCAL.remoteCache = body.barcodes;
+        // Only clear what was actually sent; anything matched during the upload stays queued.
+        Object.keys(sent).forEach(function (k) { if (LOCAL.pending[k] === sent[k]) delete LOCAL.pending[k]; });
+        return null;
+      });
+    });
+  }
+
+  function syncLineText() {
+    var total = Object.keys(LOCAL.barcodes).length;
+    var waiting = Object.keys(LOCAL.pending).length;
+    var t = total + (total === 1 ? " barcode" : " barcodes") + " in the shared database";
+    if (state.syncStatus === "syncing") t += " · syncing…";
+    else if (waiting) t += " · " + waiting + " waiting to sync";
+    return t;
+  }
+  function updateSyncLine() {
+    var n = document.getElementById("syncLine");
+    if (n) n.textContent = syncLineText();
+  }
 
   function loadSessions() {
     state.sessions = Object.keys(LOCAL.sessions).map(function (id) {
@@ -438,13 +634,15 @@
   }
 
   function learnBarcode(barcode, item) {
-    LOCAL.barcodes[barcode] = {
+    LOCAL.pending[barcode] = {
       product: item.product,
       packageDesc: item.packageDesc,
-      learnedInSession: state.currentSessionId,
-      learnedAt: new Date().toISOString(),
+      addedBy: "scan",
+      addedAt: new Date().toISOString(),
     };
+    rebuildBarcodes();
     saveLocalStore();
+    scheduleSync();
     return Promise.resolve();
   }
 
@@ -674,6 +872,7 @@
     if (state.view === "loading") return renderLoading(main);
     if (state.view === "sessions") return renderSessions(main);
     if (state.view === "import") return renderImport(main);
+    if (state.view === "barcodes") return renderBarcodes(main);
     if (state.view === "scan") return renderScan(main);
     if (state.view === "manual") return renderManual(main);
     if (state.view === "qty") return renderQty(main);
@@ -686,7 +885,11 @@
   }
 
   function renderSessions(main) {
-    setTopbar("Cycle Count", null, "");
+    setTopbar("Cycle Count", null, '<button class="topbar-link" id="barcodesBtn">Barcodes</button>');
+    document.getElementById("barcodesBtn").addEventListener("click", function () {
+      state.view = "barcodes";
+      render();
+    });
     if (!state.sessionsLoaded) {
       main.appendChild(el('<div class="empty-state">Loading count sessions…</div>'));
       return;
@@ -726,6 +929,86 @@
     });
   }
   function countCompletedFor() { return null; }
+
+  function renderBarcodes(main) {
+    setTopbar("Barcodes", function () { state.view = "sessions"; render(); }, "");
+    var total = Object.keys(LOCAL.barcodes).length;
+    var waiting = Object.keys(LOCAL.pending).length;
+    var hasKey = !!getSyncKey();
+    var last = LOCAL.lastSync ? new Date(LOCAL.lastSync).toLocaleString() : "never";
+
+    var status = el(
+      '<div class="card">' +
+        '<div class="stat-row" style="margin-bottom:10px;">' +
+          '<div class="stat"><div class="num">' + total + '</div><div class="lbl">In database</div></div>' +
+          '<div class="stat"><div class="num" style="color:' + (waiting ? "var(--warn)" : "var(--ok)") + '">' + waiting + '</div><div class="lbl">Waiting to sync</div></div>' +
+        "</div>" +
+        '<div class="muted" style="font-size:12.5px;">Last synced: ' + escapeHtml(last) + "</div>" +
+        (state.syncError ? '<div class="banner banner-warn" style="margin:10px 0 0;">' + escapeHtml(state.syncError) + "</div>" : "") +
+      "</div>"
+    );
+    main.appendChild(status);
+    var syncBtn = el('<button class="btn btn-primary">' + (state.syncStatus === "syncing" ? "Syncing…" : "Sync now") + "</button>");
+    syncBtn.disabled = state.syncStatus === "syncing";
+    syncBtn.addEventListener("click", function () { syncBarcodes(); render(); });
+    main.appendChild(syncBtn);
+
+    main.appendChild(el('<h2 class="section">Sync key</h2>'));
+    if (hasKey) {
+      var keyCard = el('<div class="card"><div style="font-weight:bold;margin-bottom:4px;">Saved on this phone</div>' +
+        '<div class="muted" style="font-size:12.5px;margin-bottom:10px;">New matches from this phone go straight to the shared database.</div></div>');
+      var rm = el('<button class="btn btn-ghost">Remove key from this phone</button>');
+      rm.addEventListener("click", function () { setSyncKey(""); state.syncKeyBad = false; state.syncError = null; render(); });
+      keyCard.appendChild(rm);
+      main.appendChild(keyCard);
+    } else {
+      var form = el('<div class="card">' +
+        '<div class="muted" style="font-size:12.5px;margin-bottom:8px;">Without a key this phone can read the database, but its new matches stay here. Paste the GitHub key made for cadence-scanner to share them.</div>' +
+        '<input id="syncKeyInput" type="password" autocomplete="off" placeholder="Paste sync key" ' +
+          'style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:15px;margin-bottom:10px;">' +
+      "</div>");
+      var save = el('<button class="btn btn-lime">Save key</button>');
+      save.addEventListener("click", function () {
+        var v = document.getElementById("syncKeyInput").value.trim();
+        if (!v) { toast("Paste the key first."); return; }
+        setSyncKey(v);
+        state.syncKeyBad = false;
+        state.syncError = null;
+        syncBarcodes();
+        render();
+      });
+      form.appendChild(save);
+      main.appendChild(form);
+    }
+
+    main.appendChild(el('<h2 class="section">Add barcodes from a list</h2>'));
+    var add = el('<div class="card">' +
+      '<div class="muted" style="font-size:12.5px;margin-bottom:8px;">One per line: barcode, product, package. Product and package must match the count sheet. Claude can prep these.</div>' +
+      '<textarea id="bulkCodes" rows="5" placeholder="00074130955066,VAL ADV FULL SYN 5W30 6/32,Case Gallons" ' +
+        'style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-family:monospace;font-size:12.5px;"></textarea>' +
+    "</div>");
+    var addBtn = el('<button class="btn btn-outline" style="margin-top:10px;">Add to database</button>');
+    addBtn.addEventListener("click", function () {
+      var lines = document.getElementById("bulkCodes").value.split(/\r?\n/);
+      var added = 0, skipped = 0;
+      lines.forEach(function (line) {
+        if (!line.trim()) return;
+        var parts = line.split(/\t|,/).map(function (s) { return s.trim(); });
+        // A real barcode is one unbroken run of digits (or letters/digits for shop labels).
+        var code = /^[A-Za-z0-9\-.]{4,}$/.test(parts[0]) && /\d/.test(parts[0]) ? cleanBarcode(parts[0], "") : null;
+        if (!code || !parts[1]) { skipped++; return; }
+        LOCAL.pending[code] = { product: parts[1], packageDesc: parts[2] || "", addedBy: "list", addedAt: new Date().toISOString() };
+        added++;
+      });
+      rebuildBarcodes();
+      saveLocalStore();
+      toast("Added " + added + (skipped ? " · skipped " + skipped + " bad line" + (skipped === 1 ? "" : "s") : ""));
+      syncBarcodes();
+      render();
+    });
+    add.appendChild(addBtn);
+    main.appendChild(add);
+  }
 
   function renderImport(main) {
     setTopbar("New Count Sheet", function () { state.view = "sessions"; render(); }, "");
@@ -823,9 +1106,8 @@
     var exportBtn = el('<button class="btn btn-ghost" style="margin:10px 0 4px;">&#8595; Export counts (.csv)</button>');
     exportBtn.addEventListener("click", exportCsv);
     main.appendChild(exportBtn);
-    var known = Object.keys(LOCAL.barcodes).length;
-    main.appendChild(el('<div class="muted" style="text-align:center;font-size:12px;margin-bottom:6px;">' +
-      known + (known === 1 ? " barcode" : " barcodes") + " remembered on this phone</div>"));
+    main.appendChild(el('<div id="syncLine" class="muted" style="text-align:center;font-size:12px;margin-bottom:6px;">' +
+      escapeHtml(syncLineText()) + "</div>"));
 
     main.appendChild(el('<h2 class="section">Items</h2>'));
     var list = el('<div class="card" style="padding:4px 12px;"></div>');
@@ -1092,6 +1374,13 @@
   function boot() {
     state.view = "sessions";
     loadSessions();
+    syncBarcodes();
+    document.addEventListener("visibilitychange", function () {
+      // Pick up other phones' matches when coming back to the app (at most every 2 min).
+      if (document.visibilityState === "visible" && (Object.keys(LOCAL.pending).length || Date.now() - lastPullAt > 120000)) {
+        syncBarcodes();
+      }
+    });
   }
 
   boot();
