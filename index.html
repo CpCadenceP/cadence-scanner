@@ -8,6 +8,7 @@
 <style>
   :root {
     --navy: #013C4C;
+    --accent-ink: #013C4C;
     --navy-light: #0A5468;
     --lime: #BDD132;
     --lime-dark: #96A626;
@@ -34,6 +35,7 @@
       --ok-bg: #16301F;
       --warn-bg: #322A10;
       --bad-bg: #331714;
+      --accent-ink: #8FD3E8;
     }
   }
   :root[data-theme="dark"] {
@@ -46,6 +48,7 @@
     --ok-bg: #16301F;
     --warn-bg: #322A10;
     --bad-bg: #331714;
+    --accent-ink: #8FD3E8;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -116,8 +119,7 @@
   .btn-primary:active { background: var(--navy-light); }
   .btn-lime { background: var(--lime); color: var(--ink); }
   .btn-lime:active { background: var(--lime-dark); }
-  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--navy); }
-  :root[data-theme="dark"] .btn-outline, @media (prefers-color-scheme: dark) { }
+  .btn-outline { background: transparent; color: var(--accent-ink); border: 1.5px solid var(--accent-ink); }
   .btn-outline:active { background: var(--bg); }
   .btn-ghost { background: transparent; color: var(--soft); font-weight: normal; }
   .btn-row { display: flex; gap: 10px; }
@@ -209,8 +211,7 @@
   .stat { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; text-align: center; }
   .stat .num { font-size: 19px; font-weight: bold; }
   .stat .lbl { font-size: 10.5px; color: var(--soft); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-  a.link { color: var(--navy); }
-  :root[data-theme="dark"] a.link { color: #8FD3E8; }
+  a.link { color: var(--accent-ink); }
   .spinner {
     display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.35);
     border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite;
@@ -431,9 +432,10 @@
       out[k] = { product: b[0], packageDesc: b[1], addedBy: "starter", note: b[2] };
     });
     Object.keys(LOCAL.remoteCache).forEach(function (k) {
-      out[cleanBarcode(k, "") || k] = LOCAL.remoteCache[k];
+      var nk = cleanBarcode(k, "");
+      if (nk) out[nk] = LOCAL.remoteCache[k];
     });
-    Object.keys(LOCAL.pending).forEach(function (k) { out[k] = LOCAL.pending[k]; });
+    Object.keys(LOCAL.pending).forEach(function (k) { if (cleanBarcode(k, "")) out[k] = LOCAL.pending[k]; });
     LOCAL.barcodes = out;
   }
   rebuildBarcodes();
@@ -545,7 +547,15 @@
         return pendingKeys.length ? "Add a sync key on the Barcodes screen to share this phone's new matches." : null;
       }
       if (state.syncKeyBad) throw syncErr(401, "bad key");
-      if (!pendingKeys.length && !needCreate) return null;
+
+      // Drop codes that fail the barcode check digit (bad reads from before
+      // validation existed). Shop labels with letters are left alone.
+      var badKeys = res.data ? Object.keys(res.data.barcodes).filter(function (k) {
+        return /^\d+$/.test(k) && !cleanBarcode(k, "");
+      }) : [];
+      badKeys.forEach(function (k) { delete LOCAL.pending[k]; });
+      pendingKeys = Object.keys(LOCAL.pending);
+      if (!pendingKeys.length && !needCreate && !badKeys.length) return null;
 
       var sent = {};
       var base = {};
@@ -555,13 +565,14 @@
           base[k] = { product: b[0], packageDesc: b[1], addedBy: "starter", note: b[2] };
         });
       } else {
-        Object.keys(res.data.barcodes).forEach(function (k) { base[k] = res.data.barcodes[k]; });
+        Object.keys(res.data.barcodes).forEach(function (k) { if (badKeys.indexOf(k) < 0) base[k] = res.data.barcodes[k]; });
       }
       pendingKeys.forEach(function (k) { base[k] = LOCAL.pending[k]; sent[k] = LOCAL.pending[k]; });
       var body = { about: "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
                    updated: new Date().toISOString(), barcodes: sortedObj(base) };
       var first = pendingKeys.length ? LOCAL.pending[pendingKeys[0]] : null;
-      var message = needCreate && !pendingKeys.length ? "Start barcode database"
+      var message = !pendingKeys.length && badKeys.length ? "Remove " + badKeys.length + " bad barcode read" + (badKeys.length === 1 ? "" : "s")
+        : needCreate && !pendingKeys.length ? "Start barcode database"
         : pendingKeys.length === 1 ? "Add barcode " + pendingKeys[0] + " (" + first.product + ")"
         : "Add " + pendingKeys.length + " barcodes";
       var payload = { message: message, content: textToB64(JSON.stringify(body, null, 1)), branch: DB.branch };
