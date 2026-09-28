@@ -300,6 +300,103 @@
   }
   var LOCAL = loadLocalStore();
 
+  // ----- barcode cleanup -----
+  // The same box can come back as different strings (UPC-A read as 12 digits
+  // one time and as 13-digit EAN the next, or a partial read of a carton's
+  // ITF-14). Every read is validated and converted to one standard 14-digit
+  // form so a barcode learned once is always found again.
+
+  function gtinValid(d) {
+    var sum = 0, n = d.length;
+    for (var i = 0; i < n - 1; i++) {
+      var digit = +d.charAt(n - 2 - i);
+      sum += (i % 2 === 0) ? digit * 3 : digit;
+    }
+    return (10 - (sum % 10)) % 10 === +d.charAt(n - 1);
+  }
+
+  function expandUpcE(d) {
+    // 8-digit UPC-E -> 12-digit UPC-A
+    var ns = d.charAt(0), m = d.substr(1, 6), c = d.charAt(7), last = m.charAt(5), core;
+    if (last <= "2") core = m.substr(0, 2) + last + "0000" + m.substr(2, 3);
+    else if (last === "3") core = m.substr(0, 3) + "00000" + m.substr(3, 2);
+    else if (last === "4") core = m.substr(0, 4) + "00000" + m.charAt(4);
+    else core = m.substr(0, 5) + "0000" + last;
+    return ns + core + c;
+  }
+
+  // Returns the standardized code, or null if this read looks bad.
+  function cleanBarcode(text, formatName) {
+    var t = String(text == null ? "" : text).trim();
+    if (!t) return null;
+    var fmt = String(formatName || "").toUpperCase();
+    if (/^\d+$/.test(t)) {
+      var n = t.length;
+      if (n === 8 && !gtinValid(t) && /^[01]/.test(t)) {
+        var upca = expandUpcE(t);
+        if (gtinValid(upca)) t = upca, n = 12;
+      }
+      if (n === 8 || n === 12 || n === 13 || n === 14) {
+        if (!gtinValid(t)) return null;
+        while (t.length < 14) t = "0" + t;
+        return t;
+      }
+      // Retail/case barcodes are never these lengths; a short ITF/UPC/EAN read is a partial read.
+      if (/ITF|UPC|EAN/.test(fmt)) return null;
+      return t;
+    }
+    return t.toUpperCase();
+  }
+
+  function prettyBarcode(code) {
+    // Show the familiar 12-digit UPC when that's what it is.
+    return /^00\d{12}$/.test(code) ? code.substr(2) : code;
+  }
+
+  // Bring barcodes learned by earlier versions into the standard form.
+  (function migrateBarcodes() {
+    var fixed = {}, changed = false;
+    Object.keys(LOCAL.barcodes || {}).forEach(function (k) {
+      var nk = cleanBarcode(k, "") || k;
+      if (nk !== k) changed = true;
+      fixed[nk] = LOCAL.barcodes[k];
+    });
+    LOCAL.barcodes = fixed;
+    if (changed) saveLocalStore();
+  })();
+
+  // Built-in barcodes: codes printed on the case itself, verified from a real
+  // carton or a public source (see Cadence Barcode Database.xlsx). Added only if
+  // this phone hasn't already matched that code to something, so a manual
+  // re-match always wins.
+  var BUILT_IN_BARCODES = {
+    // Valvoline 6/1 QT carton codes, confirmed on real cases 9/28/26
+    "00074130955066": ["VAL ADV FULL SYN 5W30 6/32", "Case Gallons"],   // VV955
+    "00074130927063": ["VAL ADV FULL SYN 5W20 6/32", "Case Gallons"],   // VV927
+    "00074130975125": ["VAL SYNPOW FS 75W90 GO 12/1 QT", "Case Gallons"], // VV975 (12/1 QT)
+    // Valvoline 5 gal boxes (the retail UPC is printed on the box)
+    "00074130031180": ["VAL EURO SYN 5W30 ABB 1/5 GA", "Case Gallons"], // 881055
+    "00074130033535": ["VAL FULL SYN 5W20 BB", "Case Gallons"],         // 881655
+    "00074130031104": ["VAL MAXLIFE MV DEX/MER ATF BB", "Case Gallons"],// 881051
+    "00074130031081": ["VAL EURO SYN 5W40 ABB 1/5 GA", "Case Gallons"], // 881050
+    "00074130031029": ["VAL MaxLife HM 5W30 BB", "Case Gallons"],       // 881047
+    "00074130030961": ["VAL SAE 5W30 ABB 1/5 GA", "Case Gallons"]       // 881042
+  };
+  (function addBuiltInBarcodes() {
+    var changed = false;
+    Object.keys(BUILT_IN_BARCODES).forEach(function (code) {
+      if (LOCAL.barcodes[code]) return;
+      LOCAL.barcodes[code] = {
+        product: BUILT_IN_BARCODES[code][0],
+        packageDesc: BUILT_IN_BARCODES[code][1],
+        learnedInSession: "built-in",
+        learnedAt: null
+      };
+      changed = true;
+    });
+    if (changed) saveLocalStore();
+  })();
+
   function loadSessions() {
     state.sessions = Object.keys(LOCAL.sessions).map(function (id) {
       return Object.assign({ id: id }, LOCAL.sessions[id]);
@@ -475,6 +572,7 @@
       state.scanToken = token;
       var scanner = new Html5Qrcode(readerId, SCANNER_CONFIG);
       var fired = false;
+      var candidate = null; // a code must be read the same way twice before it counts
       pendingStart = scanner.start(
         { facingMode: "environment" },
         {
@@ -483,14 +581,22 @@
             return { width: Math.floor(w * 0.9), height: Math.max(90, Math.floor(Math.min(w, h) * 0.5)) };
           }
         },
-        function (decodedText) {
+        function (decodedText, decodedResult) {
           if (fired) return;
+          var fmt = "";
+          try { fmt = decodedResult.result.format.formatName; } catch (e) {}
+          var code = cleanBarcode(decodedText, fmt);
+          if (!code) return; // bad or partial read; keep looking
+          var now = Date.now();
           // Ignore the box you just counted while you move to the next one.
-          if (state.lastSaved && decodedText.trim() === state.lastSaved.code &&
-              Date.now() - state.lastSaved.at < 4000) return;
+          if (state.lastSaved && code === state.lastSaved.code && now - state.lastSaved.at < 4000) return;
+          if (!candidate || candidate.code !== code || now - candidate.at > 1500) {
+            candidate = { code: code, at: now };
+            return;
+          }
           fired = true;
           if (navigator.vibrate) navigator.vibrate(80);
-          stopLiveScan().then(function () { handleDecoded(decodedText.trim()); });
+          stopLiveScan().then(function () { handleDecoded(code); });
         },
         function () { /* no barcode in this frame; keep looking */ }
       ).then(function () {
@@ -522,8 +628,14 @@
     var scanner = new Html5Qrcode("reader-file", SCANNER_CONFIG);
     scanner.scanFile(file, false).then(function (decodedText) {
       state.decoding = false;
+      var code = cleanBarcode(decodedText, "");
+      if (!code) {
+        state.scanError = "Got a partial read from that photo. Try again a little closer, or use Search.";
+        render();
+        return;
+      }
       if (navigator.vibrate) navigator.vibrate(60);
-      onDecoded(decodedText.trim());
+      onDecoded(code);
     }).catch(function (err) {
       state.decoding = false;
       state.scanError = "Couldn't read a barcode in that photo. Try getting closer, filling the frame with just the barcode, and making sure it's in focus — or use search instead.";
@@ -711,6 +823,9 @@
     var exportBtn = el('<button class="btn btn-ghost" style="margin:10px 0 4px;">&#8595; Export counts (.csv)</button>');
     exportBtn.addEventListener("click", exportCsv);
     main.appendChild(exportBtn);
+    var known = Object.keys(LOCAL.barcodes).length;
+    main.appendChild(el('<div class="muted" style="text-align:center;font-size:12px;margin-bottom:6px;">' +
+      known + (known === 1 ? " barcode" : " barcodes") + " remembered on this phone</div>"));
 
     main.appendChild(el('<h2 class="section">Items</h2>'));
     var list = el('<div class="card" style="padding:4px 12px;"></div>');
@@ -798,7 +913,7 @@
 
     if (isNewBarcode) {
       main.appendChild(el(
-        '<div class="banner banner-ok">This barcode isn\'t matched to anything yet. Find the item it belongs to below — the app will remember this barcode for next time.</div>'
+        '<div class="banner banner-ok">Barcode <b>' + escapeHtml(prettyBarcode(state.pendingBarcode)) + '</b> isn\'t matched yet. Tap the item it belongs to and the app will remember it from now on.</div>'
       ));
     }
 
@@ -834,6 +949,8 @@
           "</div>"
         );
         row.addEventListener("click", function () {
+          // Remember the barcode right away, even if the count gets cancelled.
+          if (state.pendingBarcode) learnBarcode(state.pendingBarcode, o.it);
           state.pendingItem = { idx: o.idx, item: o.it, barcode: state.pendingBarcode || null, isNew: !!state.pendingBarcode };
           state.view = "qty";
           render();
@@ -880,7 +997,9 @@
     });
 
     if (p.barcode) {
-      main.appendChild(el('<div class="banner banner-ok" style="margin-top:-2px;">Matched by barcode' + (p.isNew ? " — saved for next time." : ".") + "</div>"));
+      main.appendChild(el('<div class="banner banner-ok" style="margin-top:-2px;">' +
+        (p.isNew ? "Barcode " + escapeHtml(prettyBarcode(p.barcode)) + " saved to this item."
+                 : "Matched by barcode " + escapeHtml(prettyBarcode(p.barcode)) + ".") + "</div>"));
     }
 
     var saveBtn = el('<button class="btn btn-primary" style="margin-top:8px;">Save Count</button>');
@@ -909,6 +1028,18 @@
       });
     });
     main.appendChild(saveBtn);
+
+    if (p.barcode) {
+      var rematch = el('<button class="btn btn-ghost" style="margin-top:6px;">Wrong item? Match this barcode to a different one</button>');
+      rematch.addEventListener("click", function () {
+        state.pendingBarcode = p.barcode;
+        state.pendingItem = null;
+        state.searchTerm = "";
+        state.view = "manual";
+        render();
+      });
+      main.appendChild(rematch);
+    }
 
     var scanAnother = null;
     if (state.currentSession) {
