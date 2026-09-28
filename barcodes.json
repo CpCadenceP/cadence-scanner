@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-28T17:00:26.450Z",
+ "updated": "2026-09-28T18:49:58.796Z",
  "barcodes": {
   "00074130001299": {
    "product": "VAL PC DAILY PROTECT 10W30 6/1",
@@ -110,12 +110,6 @@
    "addedBy": "starter",
    "note": "881655 box"
   },
-  "000741300448": {
-   "product": "VAL EURO FULL SYN 0W20 6/1 QT",
-   "packageDesc": "Case Gallons",
-   "addedBy": "scan",
-   "addedAt": "2026-09-28T14:56:31.284Z"
-  },
   "00074130046443": {
    "product": "VAL Dual Clutch Syn Trans 6/32",
    "packageDesc": "Case Gallons",
@@ -133,12 +127,6 @@
    "packageDesc": "Case Gallons",
    "addedBy": "starter",
    "note": "894015 bottle"
-  },
-  "000741300748": {
-   "product": "VAL ADV FULL SYN 0W8 6/1 QT",
-   "packageDesc": "Case Gallons",
-   "addedBy": "scan",
-   "addedAt": "2026-09-28T15:00:20.066Z"
   },
   "00074130701243": {
    "product": "VAL CRIMSON #2 GRS 50/14.1 OC",
@@ -164,12 +152,6 @@
    "addedBy": "starter",
    "note": "804751 bottle"
   },
-  "00074130759324": {
-   "product": "Valvoline CVT Fluid 6/1 QT",
-   "packageDesc": "Case Gallons",
-   "addedBy": "scan",
-   "addedAt": "2026-09-28T14:56:02.887Z"
-  },
   "00074130927063": {
    "product": "VAL ADV FULL SYN 5W20 6/32",
    "packageDesc": "Case Gallons",
@@ -187,12 +169,6 @@
    "packageDesc": "Case Gallons",
    "addedBy": "starter",
    "note": "VV975 carton"
-  },
-  "00074730029811": {
-   "product": "VAL ADV FULL SYN 0W16 6/32",
-   "packageDesc": "Case Gallons",
-   "addedBy": "scan",
-   "addedAt": "2026-09-28T15:00:49.845Z"
   }
  }
 }
