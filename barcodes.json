@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-28T18:49:58.796Z",
+ "updated": "2026-09-28T18:53:02.796Z",
  "barcodes": {
   "00074130001299": {
    "product": "VAL PC DAILY PROTECT 10W30 6/1",
@@ -109,6 +109,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "starter",
    "note": "881655 box"
+  },
+  "00074130044814": {
+   "product": "VAL EURO FULL SYN 0W20 6/1 QT",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T18:52:59.896Z"
   },
   "00074130046443": {
    "product": "VAL Dual Clutch Syn Trans 6/32",
