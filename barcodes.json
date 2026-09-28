@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-28T18:55:57.171Z",
+ "updated": "2026-09-28T18:56:22.567Z",
  "barcodes": {
   "00074130001299": {
    "product": "VAL PC DAILY PROTECT 10W30 6/1",
@@ -85,6 +85,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "scan",
    "addedAt": "2026-09-28T18:55:54.195Z"
+  },
+  "00074130031005": {
+   "product": "VAL SAE 10W30 ABB 1/5 GA",
+   "packageDesc": "Case Gallons",
+   "addedBy": "scan",
+   "addedAt": "2026-09-28T18:56:19.726Z"
   },
   "00074130031029": {
    "product": "VAL MaxLife HM 5W30 BB",
