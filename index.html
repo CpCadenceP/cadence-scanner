@@ -723,12 +723,12 @@
   }
 
   function findItemIndexByProduct(items, product, packageDesc) {
-    var np = (product || "").trim().toUpperCase();
-    var nk = (packageDesc || "").trim().toUpperCase();
+    var norm = function (s) { return String(s || "").replace(/\s+/g, " ").trim().toUpperCase(); };
+    var np = norm(product);
+    var nk = norm(packageDesc);
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
-      if ((it.product || "").trim().toUpperCase() === np &&
-          (!nk || (it.packageDesc || "").trim().toUpperCase() === nk)) {
+      if (norm(it.product) === np && (!nk || norm(it.packageDesc) === nk)) {
         return i;
       }
     }
@@ -856,10 +856,23 @@
     var items = (state.currentSession && state.currentSession.items) || [];
     var data = LOCAL.barcodes[code];
     if (data) {
-      var idx = findItemIndexByProduct(items, data.product, data.packageDesc);
-      if (idx >= 0) {
-        state.pendingItem = { idx: idx, item: items[idx], barcode: code, isNew: false };
+      // A barcode can belong to more than one item, e.g. the same quart bottle
+      // sold in a 6-pack case and a 24-pack case.
+      var cands = [[data.product, data.packageDesc]].concat(data.alts || []);
+      var hits = [];
+      cands.forEach(function (c) {
+        var i = findItemIndexByProduct(items, c[0], c[1]);
+        if (i >= 0 && hits.indexOf(i) < 0) hits.push(i);
+      });
+      if (hits.length === 1) {
+        state.pendingItem = { idx: hits[0], item: items[hits[0]], barcode: code, isNew: false };
         state.view = "qty";
+        render();
+      } else if (hits.length > 1) {
+        state.pendingBarcode = null;
+        state.choice = { code: code, idxs: hits };
+        state.searchTerm = "";
+        state.view = "manual";
         render();
       } else {
         state.scanError = 'Scanned a known item — "' + data.product + '" — but it\'s not on this count sheet. Search to double-check, or scan again.';
@@ -867,6 +880,7 @@
         render();
       }
     } else {
+      state.choice = null;
       state.pendingBarcode = code;
       state.view = "manual";
       state.searchTerm = "";
@@ -878,6 +892,7 @@
 
   function render() {
     stopLiveScan();
+    if (state.view !== "manual") state.choice = null;
     var main = document.getElementById("main");
     main.innerHTML = "";
     if (state.view === "loading") return renderLoading(main);
@@ -1001,14 +1016,20 @@
     var addBtn = el('<button class="btn btn-outline" style="margin-top:10px;">Add to database</button>');
     addBtn.addEventListener("click", function () {
       var lines = document.getElementById("bulkCodes").value.split(/\r?\n/);
-      var added = 0, skipped = 0;
+      var added = 0, skipped = 0, seenInPaste = {};
       lines.forEach(function (line) {
         if (!line.trim()) return;
         var parts = line.split(/\t|,/).map(function (s) { return s.trim(); });
         // A real barcode is one unbroken run of digits (or letters/digits for shop labels).
         var code = /^[A-Za-z0-9\-.]{4,}$/.test(parts[0]) && /\d/.test(parts[0]) ? cleanBarcode(parts[0], "") : null;
         if (!code || !parts[1]) { skipped++; return; }
-        LOCAL.pending[code] = { product: parts[1], packageDesc: parts[2] || "", addedBy: "list", addedAt: new Date().toISOString() };
+        if (seenInPaste[code]) {
+          var first = LOCAL.pending[code];
+          first.alts = (first.alts || []).concat([[parts[1], parts[2] || ""]]);
+        } else {
+          LOCAL.pending[code] = { product: parts[1], packageDesc: parts[2] || "", addedBy: "list", addedAt: new Date().toISOString() };
+          seenInPaste[code] = true;
+        }
         added++;
       });
       rebuildBarcodes();
@@ -1198,11 +1219,19 @@
     var sess = state.currentSession;
     var items = (sess && sess.items) || [];
     var isNewBarcode = !!state.pendingBarcode;
-    setTopbar(isNewBarcode ? "New Barcode" : "Search", function () {
+    var choice = state.choice;
+    setTopbar(choice ? "Which one?" : isNewBarcode ? "New Barcode" : "Search", function () {
       state.pendingBarcode = null;
+      state.choice = null;
       state.view = "progress";
       render();
     }, "");
+
+    if (choice) {
+      main.appendChild(el(
+        '<div class="banner banner-ok">Barcode <b>' + escapeHtml(prettyBarcode(choice.code)) + '</b> is on more than one item on this sheet (usually the same bottle in different case packs). Tap the one you\'re counting.</div>'
+      ));
+    }
 
     if (isNewBarcode) {
       main.appendChild(el(
@@ -1226,6 +1255,7 @@
       list.innerHTML = "";
       var term = state.searchTerm.trim().toUpperCase();
       var filtered = items.map(function (it, idx) { return { it: it, idx: idx }; })
+        .filter(function (o) { return !choice || choice.idxs.indexOf(o.idx) >= 0; })
         .filter(function (o) { return !term || o.it.product.toUpperCase().indexOf(term) >= 0; })
         .slice(0, 60);
       if (!filtered.length) {
@@ -1244,7 +1274,9 @@
         row.addEventListener("click", function () {
           // Remember the barcode right away, even if the count gets cancelled.
           if (state.pendingBarcode) learnBarcode(state.pendingBarcode, o.it);
-          state.pendingItem = { idx: o.idx, item: o.it, barcode: state.pendingBarcode || null, isNew: !!state.pendingBarcode };
+          var bc = state.pendingBarcode || (choice && choice.code) || null;
+          state.pendingItem = { idx: o.idx, item: o.it, barcode: bc, isNew: !!state.pendingBarcode };
+          state.choice = null;
           state.view = "qty";
           render();
         });
