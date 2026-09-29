@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T16:56:58.871Z",
+ "updated": "2026-09-29T16:57:25.409Z",
  "barcodes": {
   "12": {
    "product": "HON GEN SYNBLEND 5W20 GF7 12/1",
@@ -287,6 +287,12 @@
    "packageDesc": "Case Each",
    "addedBy": "build",
    "addedAt": "2026-09-29T16:51:34.385Z"
+  },
+  "08798-9008A": {
+   "product": "ACURA BRAKE FLUID DOT 3 24/12o",
+   "packageDesc": "Case Gallons",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T16:57:22.529Z"
   },
   "10071621671488": {
    "product": "MAG1IV TRACT TRANS HYD FLD 3/1",
