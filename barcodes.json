@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T18:14:01.610Z",
+ "updated": "2026-09-29T18:14:50.813Z",
  "barcodes": {
   "12": {
    "product": "HON GEN SYNBLEND 5W20 GF7 12/1",
@@ -71,6 +71,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "build",
    "addedAt": "2026-09-29T18:13:58.541Z"
+  },
+  "00071611022835": {
+   "product": "PENNZOIL FS 5W30 BB",
+   "packageDesc": "Case Gallons",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T18:14:47.895Z"
   },
   "00071621001929": {
    "product": "MAG1 DOT 3 BRAKE FLUID 12/12OZ",
