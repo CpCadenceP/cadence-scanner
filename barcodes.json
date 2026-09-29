@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T18:09:59.977Z",
+ "updated": "2026-09-29T18:11:39.316Z",
  "barcodes": {
   "12": {
    "product": "HON GEN SYNBLEND 5W20 GF7 12/1",
@@ -47,6 +47,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "build",
    "addedAt": "2026-09-29T18:09:57.028Z"
+  },
+  "00033159017346": {
+   "product": "CIT CITGARD 600 15W40 12/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T18:11:36.272Z"
   },
   "00071621001929": {
    "product": "MAG1 DOT 3 BRAKE FLUID 12/12OZ",
