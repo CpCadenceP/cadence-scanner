@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T16:46:35.914Z",
+ "updated": "2026-09-29T16:47:01.258Z",
  "barcodes": {
   "00011110805805": {
    "product": "VAL ADV FULL SYN 0W16 6/32",
@@ -217,6 +217,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "starter",
    "note": "VV975 carton"
+  },
+  "00080565145316": {
+   "product": "CAM2 PROMAX AW 68 3/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T16:46:58.437Z"
   },
   "10071621671488": {
    "product": "MAG1IV TRACT TRANS HYD FLD 3/1",
