@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T16:50:03.530Z",
+ "updated": "2026-09-29T16:51:37.632Z",
  "barcodes": {
   "/12": {
    "product": "HONDA HCF-2 FLUID 12/1",
@@ -253,6 +253,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "build",
    "addedAt": "2026-09-29T16:48:09.672Z"
+  },
+  "08798-9008": {
+   "product": "HON GEN BRAKE FLD DOT 3 24/12",
+   "packageDesc": "Case Each",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T16:51:34.385Z"
   },
   "10071621671488": {
    "product": "MAG1IV TRACT TRANS HYD FLD 3/1",
