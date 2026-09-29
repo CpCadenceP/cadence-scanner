@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T16:55:17.118Z",
+ "updated": "2026-09-29T16:56:25.335Z",
  "barcodes": {
   "12": {
    "product": "HON GEN SYNBLEND 5W20 GF7 12/1",
@@ -10,6 +10,10 @@
    "alts": [
     [
      "HONDA GENUINE SB 10W30 12/1",
+     "Case Gallons"
+    ],
+    [
+     "HON GENUINE FULL SYN 0W20 12/1",
      "Case Gallons"
     ]
    ]
