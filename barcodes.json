@@ -1,12 +1,18 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T16:47:01.258Z",
+ "updated": "2026-09-29T16:47:24.024Z",
  "barcodes": {
   "00011110805805": {
    "product": "VAL ADV FULL SYN 0W16 6/32",
    "packageDesc": "Case Gallons",
    "addedBy": "scan",
    "addedAt": "2026-09-29T01:19:38.806Z"
+  },
+  "00071621001929": {
+   "product": "MAG1 DOT 3 BRAKE FLUID 12/12OZ",
+   "packageDesc": "Case Each",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T16:47:21.245Z"
   },
   "00073743143389": {
    "product": "P66 POWERTRAN FLUID 2/2.5",
