@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T16:48:12.709Z",
+ "updated": "2026-09-29T16:49:51.247Z",
  "barcodes": {
   "00011110805805": {
    "product": "VAL ADV FULL SYN 0W16 6/32",
@@ -235,6 +235,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "build",
    "addedAt": "2026-09-29T16:46:58.437Z"
+  },
+  "00786102101080": {
+   "product": "HON MANUAL TRANS FLD 12/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T16:49:48.000Z"
   },
   "08200-9003": {
    "product": "HON VTM-4 DIFFERENTIAL FLD 6/1",
