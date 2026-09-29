@@ -1,6 +1,6 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T16:51:37.632Z",
+ "updated": "2026-09-29T16:52:02.682Z",
  "barcodes": {
   "/12": {
    "product": "HONDA HCF-2 FLUID 12/1",
@@ -241,6 +241,12 @@
    "packageDesc": "Case Gallons",
    "addedBy": "build",
    "addedAt": "2026-09-29T16:46:58.437Z"
+  },
+  "00786102004305": {
+   "product": "HONDA ATF DW-1 12/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T16:51:59.883Z"
   },
   "00786102101080": {
    "product": "HON MANUAL TRANS FLD 12/1",
