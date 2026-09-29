@@ -1,7 +1,13 @@
 {
  "about": "Cadence 5102 barcode database. Barcode (14-digit) -> product and package exactly as on the PDI count sheet.",
- "updated": "2026-09-29T16:52:02.682Z",
+ "updated": "2026-09-29T16:53:21.075Z",
  "barcodes": {
+  "12": {
+   "product": "HON GEN SYNBLEND 5W20 GF7 12/1",
+   "packageDesc": "Case Gallons",
+   "addedBy": "build",
+   "addedAt": "2026-09-29T16:53:17.878Z"
+  },
   "/12": {
    "product": "HONDA HCF-2 FLUID 12/1",
    "packageDesc": "Case Gallons",
